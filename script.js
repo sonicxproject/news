@@ -469,9 +469,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
   const webhookUrl = 'https://script.google.com/macros/s/AKfycbxBSNwlPZ4xdIFbdmdXsW6UxRDjTRREm4qkxhjguJGhRxFBcPyZ_C9A2OaRzc6sNtBT_A/exec';
 
   // เตรียมข้อมูลสำหรับส่งไปยัง Google Apps Script
-  // รวม caseName และ trackingKey สำหรับการบันทึกลง Sheet (ตามรูปแบบเดิม)
-  const sheetTrackingValue = (caseName && caseName !== "ไม่มีค่า" ? caseName : "") + (trackingKey !== "ไม่มีค่า" ? trackingKey : "");
-
+  // ส่ง caseName และ trackingKey แยกกัน
   const dataToSend = {
     message: detailedMessage, // ข้อความสำหรับ Line Notify (มี caseName และ trackingKey แยกกัน)
     timestamp: timestamp,
@@ -480,8 +478,8 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
     deviceInfo: deviceData,
     phoneInfo: phoneInfo,
     referrer: referrer,
-    trackingKey: sheetTrackingValue, // ส่งค่าที่รวมแล้วไปยัง Apps Script สำหรับ Sheet
-    caseName: caseName // ส่ง caseName แยกต่างหาก (Apps Script อาจใช้หรือไม่ก็ได้)
+    trackingKey: trackingKey, // ส่ง trackingKey เดิม
+    caseName: caseName      // ส่ง caseName เดิม
   };
 
   // ส่งข้อมูล
