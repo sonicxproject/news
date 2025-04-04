@@ -2,21 +2,9 @@
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const trackKey = urlParams.get('track') || "ไม่มีค่า";
-    
-    // ถ้าไม่มี track key ให้คืนค่าเริ่มต้น
-    if (trackKey === "ไม่มีค่า") {
-      return {
-        trackingKey: "ไม่มีค่า",
-        caseName: "ไม่มีค่า"
-      };
-    }
-    
-    // ใช้ trackKey เป็น caseName ไปก่อน
-    // ฝั่งเซิร์ฟเวอร์จะทำการค้นหาชื่อเคสที่ถูกต้องอีกครั้ง
     return {
-      trackingKey: trackKey,
-      caseName: trackKey  // ส่งค่า trackKey แทน caseName ไปก่อน
+      trackingKey: urlParams.get('track') || "ไม่มีค่า",
+      caseName: urlParams.get('case') || "ไม่มีค่า"
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
