@@ -1,34 +1,22 @@
-// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
+// ฟังก์ชันดึง tracking key และ case name จาก URL parameters และ localStorage
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const trackKey = urlParams.get('track') || "ไม่มีค่า";
     
-    // เรียกดูข้อมูล caseName จาก Web App
-    if (trackKey && trackKey !== "ไม่มีค่า") {
-      // สร้าง DOM Element สำหรับใส่ caseName (จะถูกเติมข้อมูลภายหลัง)
-      if (!document.getElementById('case-name-container')) {
-        const container = document.createElement('div');
-        container.id = 'case-name-container';
-        container.style.display = 'none';
-        document.body.appendChild(container);
-      }
-      
-      // เรียก API เพื่อดึงข้อมูล caseName
-      fetchCaseName(trackKey)
-        .then(caseName => {
-          // เก็บ caseName ไว้ใน container
-          document.getElementById('case-name-container').setAttribute('data-case', caseName);
-        })
-        .catch(error => {
-          console.error("Error fetching case name:", error);
-        });
+    // พยายามดึง caseName จาก localStorage ก่อน
+    let caseName = localStorage.getItem('currentTrackKey') === trackKey 
+                  ? localStorage.getItem('currentCaseName') 
+                  : "ไม่มีค่า";
+    
+    // ถ้าไม่พบใน localStorage ให้ใช้ค่าเริ่มต้น
+    if (!caseName) {
+      caseName = "ไม่มีค่า";
     }
     
-    // ส่งค่า trackKey ก่อน (caseName จะถูกดึงมาแบบ async)
     return {
       trackingKey: trackKey,
-      caseName: getCaseNameFromContainer() || "กำลังโหลด..."
+      caseName: caseName
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
