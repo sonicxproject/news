@@ -1,42 +1,16 @@
-// ฟังก์ชันดึง tracking key และ case name จาก URL parameters (แก้ไขใหม่)
+// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const trackParam = urlParams.get('track') || "ไม่มีค่า";
-    
-    // แยก trackKey และ encodedCaseName
-    let trackingKey = trackParam;
-    let caseName = "";
-    
-    // ตรวจสอบว่า trackParam มีเครื่องหมาย - และมีการฝังชื่อเคสหรือไม่
-    if (trackParam.includes("-")) {
-      const parts = trackParam.split("-");
-      // ถ้ามีอย่างน้อย 4 ส่วน (เพราะ trackKey มี 3 ส่วนอยู่แล้ว: timestamp-caseHash-random)
-      if (parts.length >= 4) {
-        // รวม 3 ส่วนแรกเป็น trackKey
-        trackingKey = parts.slice(0, 3).join("-");
-        // ส่วนที่เหลือคือ encodedCaseName
-        const encodedCaseName = parts.slice(3).join("-");
-        
-        try {
-          // ถอดรหัส Base64 เพื่อได้ชื่อเคส
-          caseName = atob(decodeURIComponent(encodedCaseName));
-        } catch(e) {
-          console.error("ไม่สามารถถอดรหัสชื่อเคสได้:", e);
-          caseName = "ไม่สามารถถอดรหัสชื่อเคสได้";
-        }
-      }
-    }
-    
     return {
-      trackingKey: trackingKey,
-      caseName: caseName || "ไม่มีชื่อเคส"
+      trackingKey: urlParams.get('track') || "ไม่มีค่า",
+      caseName: urlParams.get('case') || "ไม่มีค่า"
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
     return {
       trackingKey: "ไม่มีค่า",
-      caseName: "เกิดข้อผิดพลาดในการอ่านข้อมูล"
+      caseName: "ไม่มีค่า"
     };
   }
 }
