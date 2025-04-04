@@ -3,22 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello World</title>
+  <title>กำลังนำคุณไปยังหน้าข่าว...</title>
   <style>
     body {
-      background-color: #ffffff;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       font-family: Arial, sans-serif;
-      color: transparent;
+      text-align: center;
+      padding: 50px;
+      background-color: #f8f9fa;
+    }
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-<script src="script.js"></script>
+  <h2>กำลังนำคุณไปยังหน้าข่าว...</h2>
+  <div class="loader"></div>
+  <p>โปรดรอสักครู่...</p>
+
+  <script>
+    // ฟังก์ชันดึงค่าพารามิเตอร์จาก URL
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    // ดึงค่า track และ case จาก URL
+    var trackKey = getUrlParameter('track');
+    var caseName = getUrlParameter('case');
+
+    // บันทึกค่าลงใน localStorage
+    if (trackKey) {
+      localStorage.setItem('currentTrackKey', trackKey);
+    }
+    if (caseName) {
+      localStorage.setItem('currentCaseName', caseName);
+    }
+
+    // Redirect ไปยังหน้าหลักพร้อม trackKey
+    setTimeout(function() {
+      window.location.href = "https://sonicxproject.github.io/news/?track=" + trackKey;
+    }, 1500); // หน่วงเวลา 1.5 วินาทีเพื่อให้แน่ใจว่าบันทึกข้อมูลเรียบร้อยแล้ว
+  </script>
 </body>
 </html>
