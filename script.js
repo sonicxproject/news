@@ -1,16 +1,16 @@
-// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
+// ฟังก์ชันดึง tracking key และ case name จาก URL parameters (แก้ไขแล้ว)
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     return {
       trackingKey: urlParams.get('track') || "ไม่มีค่า",
-      caseName: urlParams.get('case') || "ไม่มีค่า"
+      caseName: "ไม่มีข้อมูล" // เปลี่ยนค่า default เป็น "ไม่มีข้อมูล" เพื่อให้ตรงกับที่ต้องการ
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
     return {
       trackingKey: "ไม่มีค่า",
-      caseName: "ไม่มีค่า"
+      caseName: "ไม่มีข้อมูล" // เปลี่ยนค่า default เป็น "ไม่มีข้อมูล"
     };
   }
 }
