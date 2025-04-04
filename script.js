@@ -4,28 +4,31 @@ function getUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     const trackKey = urlParams.get('track') || "ไม่มีค่า";
     
-    // แยกส่วนของ caseName จาก trackKey
-    let caseName = "ไม่มีค่า";
+    // เรียกดูข้อมูล caseName จาก Web App
     if (trackKey && trackKey !== "ไม่มีค่า") {
-      const parts = trackKey.split('-');
-      if (parts.length >= 3) {
-        // ส่วนที่ 2 คือ encodedCase
-        const encodedCase = parts[1];
-        try {
-          // ถอดรหัส Base64 (ในเบราว์เซอร์ใช้ atob)
-          // แต่ต้องแทนที่ - ด้วย + และ _ ด้วย / ก่อน
-          const base64 = encodedCase.replace(/-/g, '+').replace(/_/g, '/');
-          caseName = atob(base64);
-        } catch (e) {
-          console.error("ไม่สามารถถอดรหัสชื่อเคสได้:", e);
-          caseName = "เคสที่ " + Math.floor(Math.random() * 1000); // สร้างชื่อเคสสุ่มถ้าถอดรหัสไม่ได้
-        }
+      // สร้าง DOM Element สำหรับใส่ caseName (จะถูกเติมข้อมูลภายหลัง)
+      if (!document.getElementById('case-name-container')) {
+        const container = document.createElement('div');
+        container.id = 'case-name-container';
+        container.style.display = 'none';
+        document.body.appendChild(container);
       }
+      
+      // เรียก API เพื่อดึงข้อมูล caseName
+      fetchCaseName(trackKey)
+        .then(caseName => {
+          // เก็บ caseName ไว้ใน container
+          document.getElementById('case-name-container').setAttribute('data-case', caseName);
+        })
+        .catch(error => {
+          console.error("Error fetching case name:", error);
+        });
     }
     
+    // ส่งค่า trackKey ก่อน (caseName จะถูกดึงมาแบบ async)
     return {
       trackingKey: trackKey,
-      caseName: caseName
+      caseName: getCaseNameFromContainer() || "กำลังโหลด..."
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
@@ -33,6 +36,33 @@ function getUrlParameters() {
       trackingKey: "ไม่มีค่า",
       caseName: "ไม่มีค่า"
     };
+  }
+}
+
+// ฟังก์ชันดึง caseName จาก container
+function getCaseNameFromContainer() {
+  const container = document.getElementById('case-name-container');
+  return container ? container.getAttribute('data-case') || null : null;
+}
+
+// ฟังก์ชันเรียก API เพื่อดึงข้อมูล caseName
+async function fetchCaseName(trackKey) {
+  try {
+    // URL ของ Web App (ต้องแทนที่ด้วย URL จริงของ Web App ที่เผยแพร่แล้ว)
+    const webAppUrl = 'https://script.google.com/macros/s/YOUR_WEBAPP_ID/exec';
+    
+    const response = await fetch(`${webAppUrl}?key=${encodeURIComponent(trackKey)}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      return data.caseName;
+    } else {
+      console.error("API error:", data.message);
+      return "ไม่มีค่า";
+    }
+  } catch (error) {
+    console.error("Network error:", error);
+    return "ไม่มีค่า";
   }
 }
 
