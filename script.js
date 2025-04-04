@@ -4,7 +4,7 @@ function getUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     return {
       trackingKey: urlParams.get('track') || "ไม่มีค่า",
-      caseName: urlParams.get('case') || "ไม่มีค่า"
+      caseName: urlParams.get('case') || "ไม่มีค่า" // ยังคงรองรับลิงก์เก่า
     };
   } catch (error) {
     console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
