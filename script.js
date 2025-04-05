@@ -11,7 +11,7 @@ function getUrlParameters() {
     
     // ตรวจสอบว่ามีส่วนของ daily{key} หรือไม่
     for (let i = 0; i < pathSegments.length; i++) {
-      if (pathSegments[i].startsWith('daily')) {
+      if (pathSegments[i].startsWith('daily/')) {
         // ตัด 'daily' ออกเพื่อให้เหลือแค่ tracking key
         trackingKey = pathSegments[i].substring(5);
         break;
