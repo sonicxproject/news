@@ -2,7 +2,7 @@
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const trackingKey = urlParams.get('track') || "ไม่มีค่า";
+    const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
     const caseName = urlParams.get('case') || "ไม่มีค่า";
     
     console.log("ดึงค่าจาก URL parameters:");
