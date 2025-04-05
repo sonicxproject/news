@@ -1,16 +1,31 @@
-//ฟังก์ชัน getUrlParameters ในไฟล์ script.js
+// ฟังก์ชัน getUrlParameters
 function getUrlParameters() {
   try {
     // วิธีใหม่ - ตรวจสอบเส้นทาง URL
     let trackingKey = "ไม่มีค่า";
     const pathSegments = window.location.pathname.split('/');
+    const path = window.location.pathname;
     
-    // ตรวจสอบว่ามีส่วนของ daily/{key} หรือไม่
+    // วิธีที่ 1: ตรวจสอบรูปแบบ daily={key} (รูปแบบใหม่)
     for (let i = 0; i < pathSegments.length; i++) {
-      if (pathSegments[i] === 'daily' && i + 1 < pathSegments.length) {
-        // ใช้ segment ถัดไปเป็น tracking key
-        trackingKey = pathSegments[i + 1];
+      // ตรวจสอบว่ามีส่วนที่เริ่มต้นด้วย daily= หรือไม่
+      if (pathSegments[i].startsWith('daily=') && pathSegments[i].length > 6) {
+        // ตัด 'daily=' ออกเพื่อให้เหลือแค่ tracking key
+        trackingKey = pathSegments[i].substring(6);
+        console.log("พบ tracking key จากรูปแบบ daily=");
         break;
+      }
+    }
+    
+    // วิธีที่ 2: ตรวจสอบรูปแบบ daily{key} (รูปแบบเดิม) - เผื่อมีลิงก์เก่า
+    if (trackingKey === "ไม่มีค่า") {
+      for (let i = 0; i < pathSegments.length; i++) {
+        if (pathSegments[i].startsWith('daily') && !pathSegments[i].startsWith('daily=') && pathSegments[i].length > 5) {
+          // ตัด 'daily' ออกเพื่อให้เหลือแค่ tracking key
+          trackingKey = pathSegments[i].substring(5);
+          console.log("พบ tracking key จากรูปแบบ daily{key}");
+          break;
+        }
       }
     }
     
@@ -19,6 +34,8 @@ function getUrlParameters() {
     const caseName = urlParams.get('case') || "ไม่มีค่า";
     
     console.log("ดึงค่าจาก URL:");
+    console.log("- pathSegments:", pathSegments);
+    console.log("- path:", path);
     console.log("- trackingKey:", trackingKey);
     console.log("- caseName:", caseName);
     
