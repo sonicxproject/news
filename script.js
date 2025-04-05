@@ -1,11 +1,26 @@
-// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
+// ฟังก์ชันURL parameters
 function getUrlParameters() {
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const trackingKey = urlParams.get('track') || "ไม่มีค่า";
+    // วิธีเดิมที่ใช้ URL parameters
+    // const urlParams = new URLSearchParams(window.location.search);
+    // const trackingKey = urlParams.get('track') || "ไม่มีค่า";
+    
+    // วิธีใหม่ - ตรวจสอบเส้นทาง URL
+    let trackingKey = "ไม่มีค่า";
+    const pathSegments = window.location.pathname.split('/');
+    
+    // ตรวจสอบว่ามีส่วนของ daily{key} หรือไม่
+    for (let i = 0; i < pathSegments.length; i++) {
+      if (pathSegments[i].startsWith('daily')) {
+        // ตัด 'daily' ออกเพื่อให้เหลือแค่ tracking key
+        trackingKey = pathSegments[i].substring(5);
+        break;
+      }
+    }
+    
     const caseName = urlParams.get('case') || "ไม่มีค่า";
     
-    console.log("ดึงค่าจาก URL parameters:");
+    console.log("ดึงค่าจาก URL:");
     console.log("- trackingKey:", trackingKey);
     console.log("- caseName:", caseName);
     
