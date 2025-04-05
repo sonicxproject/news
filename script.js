@@ -1,24 +1,26 @@
 // ฟังก์ชันURL parameters
 function getUrlParameters() {
   try {
-    // วิธีเดิมที่ใช้ URL parameters
-    // const urlParams = new URLSearchParams(window.location.search);
-    // const trackingKey = urlParams.get('track') || "ไม่มีค่า";
-    
-    // วิธีใหม่ - ตรวจสอบเส้นทาง URL
+    // ตัวแปรสำหรับเก็บค่า
     let trackingKey = "ไม่มีค่า";
-    const pathSegments = window.location.pathname.split('/');
+    let caseName = "ไม่มีค่า";
     
-    // ตรวจสอบว่ามีส่วนของ daily{key} หรือไม่
-    for (let i = 0; i < pathSegments.length; i++) {
-      if (pathSegments[i].startsWith('daily/')) {
-        // ตัด 'daily' ออกเพื่อให้เหลือแค่ tracking key
-        trackingKey = pathSegments[i].substring(5);
-        break;
-      }
+    // ตรวจสอบ URL pathname
+    const path = window.location.pathname;
+    
+    // ตรวจสอบรูปแบบ /news/daily/{trackKey}
+    const dailyPattern = /\/news\/daily\/([^\/]+)/i;
+    const matches = path.match(dailyPattern);
+    
+    if (matches && matches[1]) {
+      trackingKey = matches[1];
     }
     
-    const caseName = urlParams.get('case') || "ไม่มีค่า";
+    // ยังคงตรวจสอบพารามิเตอร์ case จาก URL (ถ้ามี)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('case')) {
+      caseName = urlParams.get('case');
+    }
     
     console.log("ดึงค่าจาก URL:");
     console.log("- trackingKey:", trackingKey);
